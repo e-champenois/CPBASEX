@@ -1,52 +1,106 @@
-function G = findG(X,Y,K,L,rBF,params)
+function [G,gData] = findG(gData, progBar)
 %
-% findG Numerically evaluate Abel Transform basis functions used in the pBASEX
-% inversion algorithm.
+% findG Numerical evaluation of Abel transformed polar basis functions in a
+% cartesian basis.
 %
-% G = findG(X,Y,K,L,params) calculates the value of the Abel transform of
-% the numel(K)*numel(L) basis functions at each data pixel (x,y).
+% [G, gData] = findG(gData, progBar) calculates the value of the Abel
+% transform of a set of basis functions at specified image pixels. The
+% necessary integrals are done numerically using the trapezoid method.
 %
 % Inputs:
 %
-% X and Y are 1-D arrays specifying the cartesian grid on which to sample
-% the Abel transform of the basis functions.
+% gData, a structure with fields:
 %
-% K is a 1-D array indexing the radial basis functions.
+% *x and y, 1-D arrays specifying the cartesian grid on which to sample the
+% Abel transform of the basis functions.
 %
-% L is a 1-D array of non-negative and even integers indexing the angular
+% *k, a 1-D array indexing the radial basis functions.
+%
+% *l, a 1-D array of non-negative and even integers indexing the angular
 % basis functions, which are the Legendre polynomials.
 %
-% rBF is a handle to a function that takes as inputs a number x,a number k,
-% and a 1-D array params and outputs the value of the radial basis function
-% specified by k and params at the point x.
+% *rBF, a handle to a function that takes as inputs a number r, a number k,
+% and an object params and outputs the value of the radial basis function
+% specified by k and params at the radius r.
 %
-% params is a 1-D array of parameters of the radial basis functions.
+% *params, an object of any type used to specify parameters used in the
+% radial basis functions.
+%
+% progBar, a boolean that controls whether or not to display a progress
+% bar. If not specified, the default is False.
 %
 % Output:
 %
-% G is a 2-D array with the point g(a,b) being the value of the Abel transform
-% of the basis function fkl(R,theta) = rBF(R,k,params)*legendre(l,m=0,th)
-% at the point (x,y) with k = K(1+floor(b/numel(L))), l =
-% L(1+mod(b,numel(L))), x = X(1+mod(a,numel(Y))), and y =
-% Y(1+floor(a,numel(Y))).
+% G, a 2-D array with the point g(a,b) being the value of the Abel
+% transform of the basis function fkl(R,theta) =
+% rBF(R,K,params)*legendre(L,m=0,th) at the point (X,Y) with K =
+% k(1+floor(b/numel(l))), L = l(1+mod(b,numel(l))), X =
+% x(1+mod(a,numel(y))), and Y = y(1+floor(a,numel(y))).
+%
+% gData, the same structure as in the input, unless some of the fields were
+% missing in which case this output structure is updated with the defaults
+% used for the calculation.
 %
 % Example:
 %
-% % 256x256 pixels of data
-% X = 0:255;
-% Y = 0:255;
+% % 512x512 pixels of data
+% gData.x = 0:511; gData.y = 0:511;
 % % One basis function each 2 pixels
-% K = 1:2:255;
+% gData.k = 0.5:2:511;
 % % Two-photon process can be represented angularly by the Legendre
-% % polynomials with l = 0,2,4.
-% L = 0:2:4;
-% % Gaussian radial basis functions centered at k and of width sigma =
-% % params(1).
-% rBF = @(x,k,params) exp(-(x-k).^2/(2*params(1)^2))/k^2;
-% params = sqrt(2);
-% G = findG(X,Y,K,L,rBF,params);
+% % polynomials with l = 0,2,4
+% gData.l = 0:2:4;
+% % Gaussian radial basis functions centered at k and of width sqrt(2)
+% % pixels
+% gData.params = sqrt(2);
+% gData.rBF = @(x,k,params) exp(-(x-k).^2/(2*params(1)^2))/k^2;
+% gData.zIP = @(r,k,params) sqrt((sqrt(2*10)*params(1)+k).^2-r^2);
+% G = findG(gData);
 
-zIP = @(r,k,params) sqrt((sqrt(2*10)*params(1)+k)^2-r^2); % Zero integrand point
+% Set unspecified inputs to their default values
+if nargin==1
+    progBar = 0;
+end
+if ~isfield(gData,'x')
+    gData.x = 0:511;
+end
+if ~isfield(gData,'y')
+    gData.y = gData.x;
+end
+if ~isfield(gData,'k')
+    gData.k = (gData.x(1:2:end)+gData.x(2:2:end))/2;
+end
+if ~isfield(gData,'l')
+    gData.l = [0,2,4];
+end
+if ~isfield(gData,'rBF')
+    gData.rBF = @(x,k,params) exp(-(x-k).^2/(2*params(1)^2))/k^2;
+    gData.params = 2;
+    gData.zIP = @(r,k,params) sqrt((sqrt(2*10)*params(1)+k).^2-r^2);
+end
+if ~isfield(gData,'params')
+    gData.params = sqrt(2);
+end
+if ~isfield(gData,'zIP')
+    gData.zIP = @(r,k,params) 2*max(gData.x);
+end
+if ~isfield(gData,'trapzStep')
+    gData.trapzStep = min([diff(gData.x),diff(gData.y)])/10;
+    if ~gData.trapzStep
+        gData.trapzStep = 0.1;
+    end
+end
+
+% Deal out gData values from structure to separate variables for code
+% clarity and small (possibly negligible) communication decrease in parfor
+X = gData.x;
+Y = gData.y;
+K = gData.k;
+L = gData.l;
+rBF = gData.rBF;
+params = gData.params;
+zIP = gData.zIP;
+trapzStep = gData.trapzStep;
 
 % Size of inputs
 lenX = numel(X);
@@ -54,19 +108,21 @@ lenY = numel(Y);
 lenK = numel(K);
 lenL = numel(L);
 
-% Create  (lenX*lenY)x1 arrays with the x, y, and R values for each data
-% pixel
+% Find radius of each pixel
 [xl,yl] = meshgrid(X,Y);
 xl = xl(:);
 yl = yl(:);
 R = sqrt(xl.^2+yl.^2);
 
-u = 0:0.1:zIP(min(R),max(K),params); % Points at which to sample the integrand for the trapz integration
+% Points at which to sample the integrand for the trapz integration
+u = 0:trapzStep:zIP(min(R),max(K),params);
 lenU = numel(u);
 
 % Set up progress bar
-progStep = ceil(lenX*lenY/500)+1;
-progBar = ParforProgMon('Polar Integrals Progress:', lenX*lenY, progStep, 400, 70);
+if progBar
+    progStep = ceil(lenX*lenY/500)+1;
+    progBar = ParforProgMon('Polar Integrals Progress:', lenX*lenY, progStep, 400, 70);
+end
 
 G = zeros(lenX*lenY,lenK*lenL); % Initialize output matrix
 
@@ -101,76 +157,16 @@ parfor ind = 1:lenX*lenY % Loop over every data pixel
     
     G(ind,:) = subG;
     
-    if not(mod(ind,progStep))
+    % Update progress bar
+    if progBar&&not(mod(ind,progStep))
         progBar.increment();
     end
     
 end
 
-progBar.delete();
-
+% Delete progress bar
+if progBar
+    progBar.delete();
 end
 
-function p=leg(l,x)
-
-% leg Calculate the value of the l-th order Legendre polynomial (m=0) at
-% point x. Implemented only for even values of l.
-%
-% p = leg(l,x)
-
-switch l
-    case 0
-        p=ones(size(x));
-        return
-    case 1
-        p=x;
-        return
-    case 2
-        p=(3*x.*x -1)/2;
-        return
-    case 4
-        x2=x.*x;
-        p = ((35.*x2-30).*x2+3)/8;
-        return
-    case 6
-        x2=x.*x;
-        p = (((231.*x2-315).*x2+105).*x2-5)/16;
-        return
-    case 8
-        x2=x.*x;
-        p = ((((6435.*x2-12012).*x2+6930).*x2-1260).*x2+35)/128;
-        return
-    case 10
-        x2=x.*x;
-        p = (((((46189.*x2-109395).*x2+90090).*x2-30030).*x2+3465).*x2-63)/256;
-        return
-    case 12
-        x2=x.*x;
-        p = ((((((676039.*x2-1939938).*x2+2078505).*x2-1021020).*x2+225225).*x2-18018).*x2+231)/1024;
-        return
-    case 14
-        x2=x.*x;
-        p = (((((((5014575.*x2-16900975).*x2+22309287).*x2-14549535).*x2+4849845).*x2-765765).*x2+45045).*x2-429)/2048;
-        return
-    case 16
-        x2=x.*x;
-        p = ((((((((300540195.*x2-1163381400).*x2+1825305300).*x2-1487285800).*x2+669278610).*x2-162954792).*x2+19399380).*x2-875160).*x2+6435)/32768;
-        return
-    case 18
-        x2=x.*x;
-        p = (((((((((2268783825.*x2-9917826435).*x2+18032411700).*x2-17644617900).*x2+10039179150).*x2-3346393050).*x2+624660036).*x2-58198140).*x2+2078505).*x2-12155)/65536;
-        return
-    case 20
-        x2=x.*x;
-        p = ((((((((((34461632205.*x2-167890003050).*x2+347123925225).*x2-396713057400).*x2+273491577450).*x2-116454478140).*x2+30117537450).*x2-4461857400).*x2+334639305).*x2-9699690).*x2+46189)/262144;
-        return
-    case 22
-        x2=x.*x;
-        p = (((((((((((263012370465.*x2-1412926920405).*x2+3273855059475).*x2-4281195077775).*x2+3471239252250).*x2-1805044411170).*x2+601681470390).*x2-124772655150).*x2+15058768725).*x2-929553625).*x2+22309287).*x2-88179)/524288;
-        return
-    case 24
-        x2=x.*x;
-        p = ((((((((((((8061900920775.*x2-47342226683700).*x2+121511715154830).*x2-178970743251300).*x2+166966608033225).*x2-102748681866600).*x2+42117702927300).*x2-11345993441640).*x2+1933976154825).*x2-194090796900).*x2+10039179150).*x2-202811700).*x2+676039)/4194304;
-        return
-end
 end
