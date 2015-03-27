@@ -3,7 +3,7 @@ CPBASEX
 
 [MATLAB] PBASEX Abel Inversion without Polar Rebinning
 
-This README needs some work...
+This README needs some work... See individual functions for more detailed documentation.
 
 Instructions:
 
