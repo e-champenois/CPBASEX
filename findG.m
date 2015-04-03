@@ -122,6 +122,8 @@ lenU = numel(u);
 if progBar
     progStep = ceil(lenX*lenY/500)+1;
     progBar = ParforProgMon('Polar Integrals Progress:', lenX*lenY, progStep, 400, 70);
+else
+    progStep = 0;
 end
 
 G = zeros(lenX*lenY,lenK*lenL); % Initialize output matrix

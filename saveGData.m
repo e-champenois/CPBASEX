@@ -1,11 +1,11 @@
 x = 0:511;
 y = x;
 k = 0.5:2:510.5;
-l = 0:2:4;
+l = 0:2:8;
 params = 2;
 rBF = @(x,k,params) exp(-(x-k).^2./(2*params(1)^2))./k.^2;
 zIP = @(r,k,params) sqrt((sqrt(2*10)*params(1)+k).^2-r^2);
-gData = {'x',x,'y',y,'k',k,'l',l,'params',params,'rBF',rBF,'zIP',zIP};
+gData = struct('x',x,'y',y,'k',k,'l',l,'params',params,'rBF',rBF,'zIP',zIP);
 G = findG(gData);
 Ginv = findGinv(gData);
 [U,S,V] = svd(G,0);

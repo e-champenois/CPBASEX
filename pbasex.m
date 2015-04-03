@@ -89,12 +89,9 @@ function out = pbasex(images, gData, makeImages, r)
 % where the third dimension indexes the images. These are only created if
 % makeImages is True.
 
-% By default, do not make reconstruction images and use gData.x for r
-if nargin<4
-    r = gData.x;
-    if nargin<3
-        makeImages = 0;
-    end
+% By default, do not make reconstruction images
+if nargin<3
+    makeImages = 0;
 end
 
 % Load gData if file specified
@@ -104,6 +101,11 @@ if ischar(gData)
     else
         gData = load(gData,'Up','Sinv','V','x','y','k','l','rBF','params');
     end
+end
+
+% By default, use gData.x for r
+if nargin<4
+    r = gData.x;
 end
 
 % Problem Dimensionality
@@ -124,7 +126,7 @@ c = gData.V*(diag(gData.Sinv)*(gData.Up*images));
 C = permute(reshape(c,lenL,lenK,numIms),[2,1,3]);
 
 % Calculate the radial intensity and beta values
-IrB = diag(r.^2)*(frk*C(:,:));
+IrB = diag(r.^2)*(frk'*C(:,:));
 Ir = IrB(:,1:lenL:end);
 betas = reshape(IrB(:,setdiff(1:end,1:lenL:end))./reshape([Ir;Ir],lenR,(lenL-1)*numIms),lenR,lenL-1,numIms);
 
