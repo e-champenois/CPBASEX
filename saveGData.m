@@ -1,6 +1,7 @@
 tic
 x = 0:255;
 y = x;
+<<<<<<< HEAD
 xkratio = 8;
 if xkratio == 1
     k = x;
@@ -11,6 +12,13 @@ l = 0:2:4;
 params = 0.7*xkratio;
 rBF = @(x,k,params) exp(-(x-k).^2./(2*params(1)^2))./k.^2; %leave alone
 zIP = @(r,k,params) sqrt((sqrt(2*10)*params(1)+k).^2-r^2); %leave alone
+=======
+k = 0.5:2:510.5;
+l = 0:2:8;
+params = 2;
+rBF = @(x,k,params) exp(-(x-k).^2./(2*params(1)^2))./k.^2;
+zIP = @(r,k,params) sqrt((sqrt(2*10)*params(1)+k).^2-r^2);
+>>>>>>> 629229caabfed460d2a5fd6b8e5d81782bcc3051
 gData = struct('x',x,'y',y,'k',k,'l',l,'params',params,'rBF',rBF,'zIP',zIP);
 G = findG(gData);
 Ginv = findGinv(gData);

@@ -21,6 +21,10 @@ else
 end
 z = size(data,3);
 
+<<<<<<< HEAD
 out = [data(1:x1,1:y1,:),zeros(x1,y2,z);zeros(x2,rmax,z)];
+=======
+out = [data(1:x1,1:y1,:),zeros(x1,y2,z);zeros(x2,rmax)];
+>>>>>>> 629229caabfed460d2a5fd6b8e5d81782bcc3051
 
 end
