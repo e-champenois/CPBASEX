@@ -121,13 +121,16 @@ lenU = numel(u);
 % Set up progress bar
 if progBar
     progStep = ceil(lenX*lenY/500)+1;
-    progBar = ParforProgMon('Polar Integrals Progress:', lenX*lenY, progStep, 400, 70);
+    pB = ParforProgMon('Polar Integrals Progress:', lenX*lenY, progStep, 400, 70);
+else
+    progStep = 0;
+    pB = 0;
 end
 
 G = zeros(lenX*lenY,lenK*lenL); % Initialize output matrix
 
 % Calculate integrals
-parfor ind = 1:lenX*lenY % Loop over every data pixel
+for ind = 1:lenX*lenY % Loop over every data pixel
     
     subG = zeros(1,lenK*lenL); % Initialize G subarray for for pixel (x,y)
     
@@ -159,14 +162,14 @@ parfor ind = 1:lenX*lenY % Loop over every data pixel
     
     % Update progress bar
     if progBar&&not(mod(ind,progStep))
-        progBar.increment();
+        pB.increment();
     end
     
 end
 
 % Delete progress bar
 if progBar
-    progBar.delete();
+    pB.delete();
 end
 
 end

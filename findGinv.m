@@ -111,6 +111,8 @@ costh = yl./R;
 if progBar
     progStep = ceil(lenK*lenL/500)+1;
     progBar = ParforProgMon('Polar Integrals Progress:', lenK*lenL, progStep, 400, 70);
+else
+    progStep = 0;
 end
 
 Ginv = zeros(lenK*lenL,lenX*lenY); % Initialize output matrix

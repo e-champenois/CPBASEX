@@ -1,4 +1,4 @@
-function out = pbasex(images, gData, makeImages, r)
+function out = pbasex(images, gData, makeImages, alpha, r)
 %
 % pbasex Apply a modification of the PBASEX algorithm (see Garcia et al.,
 % Rev. Sci. Instrum. 75, 4989 (2004)) to Abel invert an image.
@@ -89,12 +89,19 @@ function out = pbasex(images, gData, makeImages, r)
 % where the third dimension indexes the images. These are only created if
 % makeImages is True.
 
-% By default, do not make reconstruction images and use gData.x for r
+% By default, do not make reconstruction images
+if nargin<3
+    makeImages = 0;
+end
+
+% Set default alpha
 if nargin<4
+    alpha = 4e-5;
+end
+
+% By default, use gData.x for r
+if nargin<5
     r = gData.x;
-    if nargin<3
-        makeImages = 0;
-    end
 end
 
 % Load gData if file specified
@@ -111,22 +118,23 @@ lenX = numel(gData.x);
 lenY = numel(gData.y);
 lenK = numel(gData.k);
 lenL = numel(gData.l);
-lenR = numel(r);
 numIms = size(images,3);
-
-% Sample the radial part of the basis functions
-[R,K]=meshgrid(r,gData.k);
-frk = gData.rBF(R,K,gData.params);
 
 % Invert the data
 images = reshape(images,lenX*lenY,numIms);
 c = gData.V*(diag(gData.Sinv)*(gData.Up*images));
 C = permute(reshape(c,lenL,lenK,numIms),[2,1,3]);
 
+% Sample the radial part of the basis functions
+[R,K]=meshgrid(r,gData.k);
+frk = gData.rBF(R,K,gData.params);
+
 % Calculate the radial intensity and beta values
-IrB = diag(r.^2)*(frk*C(:,:));
-Ir = IrB(:,1:lenL:end);
-betas = reshape(IrB(:,setdiff(1:end,1:lenL:end))./reshape([Ir;Ir],lenR,(lenL-1)*numIms),lenR,lenL-1,numIms);
+E = alpha*r.^2;
+IEB = 2*pi/alpha*diag(r)*frk'*C(:,:);
+IE = IEB(:,1:lenL:end);
+fr = 2*alpha*diag(1./r)*IE;
+betas = bsxfun(@times,reshape(IEB(:,setdiff(1:end,1:lenL:end)),[numel(r),lenL-1,numIms]),1./permute(IE,[1,3,2]));
 
 % Generate Abel transformed and phi=0 sliced images from fit
 if makeImages
@@ -135,7 +143,7 @@ if makeImages
 end
 
 % Make an output structure with commonly used data
-out = struct('r',gData.x,'Ir',Ir,'k',gData.k,'c',C,'betas',betas);
+out = struct('r',r,'fr',fr,'E',E,'IE',IE,'k',gData.k,'c',C,'betas',betas);
 if makeImages
     out.recon = im_recon;
     out.inv = im_inv;
