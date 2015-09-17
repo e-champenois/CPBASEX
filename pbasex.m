@@ -92,7 +92,6 @@ function out = pbasex(images, gData, makeImages, alpha, r)
 % By default, do not make reconstruction images
 if nargin<3
     makeImages = 0;
-<<<<<<< HEAD
 end
 
 % Set default alpha
@@ -103,8 +102,6 @@ end
 % By default, use gData.x for r
 if nargin<5
     r = gData.x;
-=======
->>>>>>> 629229caabfed460d2a5fd6b8e5d81782bcc3051
 end
 
 % Load gData if file specified
@@ -114,11 +111,6 @@ if ischar(gData)
     else
         gData = load(gData,'Up','Sinv','V','x','y','k','l','rBF','params');
     end
-end
-
-% By default, use gData.x for r
-if nargin<4
-    r = gData.x;
 end
 
 % Problem Dimensionality
@@ -138,17 +130,11 @@ C = permute(reshape(c,lenL,lenK,numIms),[2,1,3]);
 frk = gData.rBF(R,K,gData.params);
 
 % Calculate the radial intensity and beta values
-<<<<<<< HEAD
 E = alpha*r.^2;
 IEB = 2*pi/alpha*diag(r)*frk'*C(:,:);
 IE = IEB(:,1:lenL:end);
 fr = 2*alpha*diag(1./r)*IE;
 betas = bsxfun(@times,reshape(IEB(:,setdiff(1:end,1:lenL:end)),[numel(r),lenL-1,numIms]),1./permute(IE,[1,3,2]));
-=======
-IrB = diag(r.^2)*(frk'*C(:,:));
-Ir = IrB(:,1:lenL:end);
-betas = reshape(IrB(:,setdiff(1:end,1:lenL:end))./reshape([Ir;Ir],lenR,(lenL-1)*numIms),lenR,lenL-1,numIms);
->>>>>>> 629229caabfed460d2a5fd6b8e5d81782bcc3051
 
 % Generate Abel transformed and phi=0 sliced images from fit
 if makeImages
