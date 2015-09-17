@@ -1,5 +1,5 @@
 tic
-x = 0:255;
+x = 0:511;
 y = x;
 xkratio = 8;
 if xkratio == 1
