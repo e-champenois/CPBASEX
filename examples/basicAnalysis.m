@@ -1,7 +1,7 @@
 %% Calculate Integrals
 saveGData;
 %% Load Integrals
-gData = load('G_r512_k256_l4_s1.41.mat');
+gData = loadG('G_r512_k128_l2_s2.8.h5');
 %% Load Data
 high_counts = 'sample_highcounts.dat';
 low_counts = 'sample_lowcounts.dat';
