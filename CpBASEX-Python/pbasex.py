@@ -1,10 +1,23 @@
 from __future__ import division
 import numpy as np
 import h5py
-from multiprocessing import Pool,cpu_count
-import dill
+try:
+	import dill
+except:
+	def cpu_count():
+		return 1
+else:
+	from multiprocessing import Pool, cpu_count
+	def packed_func((dumped_function, item)):
+		target_function = dill.loads(dumped_function)
+		res = target_function(item)
+		return res
+	def pack(target_function, items):
+		dumped_function = dill.dumps(target_function)
+		dumped_items = [(dumped_function, item) for item in items]
+		return packed_func,dumped_items
 
-def pbasex(images, gData, make_images=False, regularization=0, alpha=1):
+def pbasex(images, gData, make_images=False, weights=None, regularization=0, alpha=1):
 	"""Perform an Abel inversion using the pBASEX algorithm (see Garcia et al., Rev. Sci. Instrum. 75, 4989 (2004)).
 
 	Parameters
@@ -58,7 +71,11 @@ def pbasex(images, gData, make_images=False, regularization=0, alpha=1):
 
 	# Invert the images through a least-squares fit of the Abel transformed basis functions.
 	images = images.reshape(nx**2, nim)
-	c = gData['V'].dot(np.diag(gData['S']/(gData['S']**2+regularization)).dot(gData['Up'].dot(images)))
+
+	if weights is None:
+		c = gData['V'].dot(np.diag(gData['S']/(gData['S']**2+regularization)).dot(gData['Up'].dot(images)))
+	else:
+		c = gData['V'].dot(np.diag(gData['S']/(gData['S']**2+regularization)).dot(np.linalg.solve(gData['Up'].dot(weights[:,None]*gData['Up'].T),gData['Up'].dot(weights[:,None]*images))))
 
 	# Calculate kinetic energy spectra and angular distributions from the fit coefficients.
 	E = alpha*gData['x']**2
@@ -66,11 +83,14 @@ def pbasex(images, gData, make_images=False, regularization=0, alpha=1):
 	IE = IEB[:,:nim]
 	betas = np.delete(IEB, np.s_[::nl], axis=1).reshape(nx, nl-1, nim)/IE[:,None,:]
 
-	# Populate the output dictionary
-	out = {'E': E, 'IE': IE, 'betas': betas, 'c': c}
 	if make_images:
-		out['fit'] = unfoldQuadrant(gData['Up'].T.dot(((gData['S']**2+regularization)/gData['S']).dot(gData['V'].T.dot(c))).reshape(nx,nx,nim))
-		out['inv'] = unfoldQuadrant(gData['Ginv'].dot(c).reshape(nx,nx,nim))
+		fit = unfoldQuadrant(gData['Up'].T.dot(np.diag((gData['S']**2+regularization)/gData['S']).dot(gData['V'].T.dot(c))).reshape(nx,nx,nim))
+		inv = unfoldQuadrant(gData['Ginv'].dot(c).reshape(nx,nx,nim))
+
+	# Populate the output dictionary
+	out = {'E': E, 'IE': np.squeeze(IE), 'betas': np.squeeze(betas), 'c': c}
+	if make_images:
+		out['fit'], out['inv'] = np.squeeze(fit), np.squeeze(inv)
 
 	return out
 
@@ -120,7 +140,6 @@ def loadG(gData, make_images=False):
 			gData_dict[key] = gData[key].value
 		return loadG(gData_dict, make_images)
 	else:
-		pass # Check format??
 		return gData
 
 def get_gData(gData, h5_filename=None, custom_rBF=None, nProc=cpu_count()):
@@ -160,9 +179,10 @@ def get_gData(gData, h5_filename=None, custom_rBF=None, nProc=cpu_count()):
 	>>> get_gData(gData)
 	"""
 
-	# Set default filename.
+	# Set defaults.
 	if h5_filename is None:
 		h5_filename = 'G_r'+str(len(gData['x']))+'_k'+str(len(gData['k']))+'_l'+str(max(gData['l']))+'.h5'
+	nProc = min(nProc, cpu_count())
 
 	# Find problem dimension.
 	gData['nk'] = len(gData['k'])
@@ -204,10 +224,6 @@ def get_gData(gData, h5_filename=None, custom_rBF=None, nProc=cpu_count()):
 	with h5py.File(h5_filename,'w') as f:
 		for key in gData.keys():
 			f.create_dataset(key,data=gData[key])
-			# try:
-			# 	f.create_dataset(key,data=gData[key].T)
-			# except AttributeError:
-			# 	f.create_dataset(key,data=gData[key])
 
 def findG(X, K, L, rBF, zIP, trapz_step, nProc):
 	"""Numerically samples the Abel transformed basis functions.
@@ -263,19 +279,12 @@ def findG(X, K, L, rBF, zIP, trapz_step, nProc):
 
 		return G_sub
 
-	p = Pool(nProc)
-
-	return np.array(p.map(*pack(findG_sub, zip(Y, R))))/(2*np.pi)
-
-def packed_func((dumped_function, item)):
-    target_function = dill.loads(dumped_function)
-    res = target_function(item)
-    return res
-
-def pack(target_function, items):
-    dumped_function = dill.dumps(target_function)
-    dumped_items = [(dumped_function, item) for item in items]
-    return packed_func,dumped_items
+	if nProc > 1:
+		with Pool(nProc) as p:
+			G = p.map(*pack(findG_sub, zip(Y, R)))
+	else:
+		G = map(findG_sub, zip(Y, R))
+	return np.array(G)/(2*np.pi)
 
 def findGinv(X, K, L, rBF):
 	#reoptimize??
