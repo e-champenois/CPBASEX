@@ -1,6 +1,6 @@
 tic
-x = 0:63;
-xkratio = 8;
+x = 0:511;
+xkratio = 4;
 if xkratio == 1
     k = x;
 else
@@ -20,7 +20,7 @@ Ginv = findGinv(gData,0);
 [U,S,V] = svd(G,0);
 Up = U';
 S = diag(S);
-h5_filename = ['G_r',num2str(numel(x)),'_k',num2str(numel(k)),'_l',num2str(max(l)),'_s',num2str(round(params,2)),'.h5'];
+h5_filename = ['G_r',num2str(numel(x)),'_k',num2str(numel(k)),'_l',num2str(max(l)),'.h5'];
 x=x';Up=Up';S=S';V=V';frk=frk';Ginv=Ginv';
 save(h5_filename,'-v7.3','x','k','l','nk','nl','Up','S','V','frk','Ginv');
 toc

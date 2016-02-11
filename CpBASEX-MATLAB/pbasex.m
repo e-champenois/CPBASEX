@@ -132,7 +132,7 @@ E = alpha*gData.x.^2;
 IEB = 1/(2*alpha)*diag(gData.x)*(gData.frk*reshape(permute(reshape(c,nk,nl,nims),[1,3,2]),nk,nl*nims));
 IE = IEB(:,1:nims);
 betas = bsxfun(@times,permute(reshape(IEB(:,nims+1:end),[nx,nims,nl-1]),[1,3,2]),1./permute(IE,[1,3,2]));
-
+keyboard
 % Generate Abel transformed and phi=0 sliced images from fit
 if makeImages
     im_recon = unfoldQuadrant(reshape(gData.Up'*(diag(gData.S)*(gData.V'*c)),nx,nx,nims));

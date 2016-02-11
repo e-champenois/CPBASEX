@@ -28,7 +28,9 @@ def pbasex(images, gData, make_images=False, weights=None, regularization=0, alp
 		Reference to the gData dictionary, holding the matrices needed for pBASEX inversion. See the loadG and get_gData functions for more information.
 	make_images : bool
 		Boolean describing whether or not to generate the fitted and inverted images. Defaults to False due to added computation.
-	regularization int/1D array
+	weights : 2D array
+		Weights associated with the error at each image pixel for the least squares fitting. This adds some computation time to the algorithm.
+	regularization : int/1D array
 		Value(s) of the L-2 norm regularization parameter to use. Defaults to 0, indicating no regularization.
 	alpha : int
 		VMI spectrometer parameter correlating a radius to an energy, following E = alpha * r**2.
@@ -294,8 +296,8 @@ def findGinv(X, K, L, rBF):
 	Y, X = Y.flatten(), X.flatten()
 	R = np.sqrt(X**2+Y**2)
 
-	K, L = np.meshgrid(K, L)
-	K, L = K.T.flatten(), L.T.flatten()
+	L, K = np.meshgrid(L, K)
+	L, K = L.T.flatten(), K.T.flatten()
 
 	CosTh = Y/R
 	#CosTh[np.isnan(CosTh)] = 1

@@ -1,11 +1,12 @@
 import numpy as np
 import time
-from pbasex import get_gData
 import sys
+sys.path.append('../CpBASEX-Python')
+from pbasex import get_gData
 
 gData = {}
 gData['x'] = np.arange(2**9, dtype='double')
-xkratio = int(sys.argv[1])
+xkratio = 4
 gData['l'] =  2*np.arange(2+1)
 gData['params'] = 0.7*xkratio #sigma
 gData['rBF'] = 'gauss'
