@@ -73,17 +73,13 @@ if ~isfield(gData,'l')
 end
 if ~isfield(gData,'rBF')
     gData.rBF = @(x,k,params) exp(-(x-k).^2/(2*params(1)^2))/k^2;
-    gData.params = 2;
+    gData.params = 1.4;
     gData.zIP = @(r,k,params) sqrt((sqrt(2*10)*params(1)+k).^2-r^2);
-end
-if ~isfield(gData,'params')
-    gData.params = 1;
 end
 
 % Deal out gData values from structure to separate variables for code
 % clarity and small (possibly negligible) communication decrease in parfor
 X = gData.x;
-Y = gData.y;
 K = gData.k;
 L = gData.l;
 rBF = gData.rBF;
@@ -95,13 +91,12 @@ end
 
 % Size of inputs
 lenX = numel(X);
-lenY = numel(Y);
 lenK = numel(K);
 lenL = numel(L);
 
-% Create  (lenX*lenY)x1 arrays with the x, y, and R values for each data
+% Create  (lenX^2)x1 arrays with the x, y, and R values for each data
 % pixel
-[xl,yl] = meshgrid(X,Y);
+[xl,yl] = meshgrid(X,X);
 xl = xl(:);
 yl = yl(:);
 R = sqrt(xl.^2+yl.^2);
@@ -115,13 +110,13 @@ else
     progStep = 0;
 end
 
-Ginv = zeros(lenK*lenL,lenX*lenY); % Initialize output matrix
+Ginv = zeros(lenK*lenL,lenX^2); % Initialize output matrix
 
 % Calculate integrals
 parfor ind = 1:lenK*lenL % Loop over every radial basis function
     
-    k = K(ceil(ind/lenL));
-    l = L(mod(ind-1,lenL)+1);
+    k = K(mod(ind-1,lenK)+1);
+    l = L(ceil(ind/lenK));
     
     Ginv(ind,:) = rBF(R,k,params).*leg(l,costh); % Calculate function value
     

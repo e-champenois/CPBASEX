@@ -280,8 +280,9 @@ def findG(X, K, L, rBF, zIP, trapz_step, nProc):
 		return G_sub
 
 	if nProc > 1:
-		with Pool(nProc) as p:
-			G = p.map(*pack(findG_sub, zip(Y, R)))
+		p = Pool(nProc)
+		G = p.map(*pack(findG_sub, zip(Y, R)))
+		p.close()
 	else:
 		G = map(findG_sub, zip(Y, R))
 	return np.array(G)/(2*np.pi)

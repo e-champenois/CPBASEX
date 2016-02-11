@@ -64,9 +64,6 @@ end
 if ~isfield(gData,'x')
     gData.x = 0:511;
 end
-if ~isfield(gData,'y')
-    gData.y = gData.x;
-end
 if ~isfield(gData,'k')
     gData.k = (gData.x(1:2:end)+gData.x(2:2:end))/2;
 end
@@ -75,17 +72,14 @@ if ~isfield(gData,'l')
 end
 if ~isfield(gData,'rBF')
     gData.rBF = @(x,k,params) exp(-(x-k).^2/(2*params(1)^2))/k^2;
-    gData.params = 2;
+    gData.params = 1.4;
     gData.zIP = @(r,k,params) sqrt((sqrt(2*10)*params(1)+k).^2-r^2);
-end
-if ~isfield(gData,'params')
-    gData.params = sqrt(2);
 end
 if ~isfield(gData,'zIP')
     gData.zIP = @(r,k,params) 2*max(gData.x);
 end
 if ~isfield(gData,'trapzStep')
-    gData.trapzStep = min([diff(gData.x),diff(gData.y)])/10;
+    gData.trapzStep = min(diff(gData.x))/10;
     if ~gData.trapzStep
         gData.trapzStep = 0.1;
     end
@@ -94,7 +88,6 @@ end
 % Deal out gData values from structure to separate variables for code
 % clarity and small (possibly negligible) communication decrease in parfor
 X = gData.x;
-Y = gData.y;
 K = gData.k;
 L = gData.l;
 rBF = gData.rBF;
@@ -104,12 +97,11 @@ trapzStep = gData.trapzStep;
 
 % Size of inputs
 lenX = numel(X);
-lenY = numel(Y);
 lenK = numel(K);
 lenL = numel(L);
 
 % Find radius of each pixel
-[xl,yl] = meshgrid(X,Y);
+[xl,yl] = meshgrid(X,X);
 xl = xl(:);
 yl = yl(:);
 R = sqrt(xl.^2+yl.^2);
@@ -120,17 +112,17 @@ lenU = numel(u);
 
 % Set up progress bar
 if progBar
-    progStep = ceil(lenX*lenY/500)+1;
-    pB = ParforProgMon('Polar Integrals Progress:', lenX*lenY, progStep, 400, 70);
+    progStep = ceil(lenX^2/500)+1;
+    pB = ParforProgMon('Polar Integrals Progress:', lenX^2, progStep, 400, 70);
 else
     progStep = 0;
     pB = 0;
 end
 
-G = zeros(lenX*lenY,lenK*lenL); % Initialize output matrix
+G = zeros(lenX^2,lenK*lenL); % Initialize output matrix
 
 % Calculate integrals
-for ind = 1:lenX*lenY % Loop over every data pixel
+for ind = 1:lenX^2 % Loop over every data pixel
     
     subG = zeros(1,lenK*lenL); % Initialize G subarray for for pixel (x,y)
     
@@ -149,9 +141,9 @@ for ind = 1:lenX*lenY % Loop over every data pixel
         if ~isempty(subU)
             
             rad_term = rBF(sqrt(subU.^2+R(ind)^2),K(q),params); % Radial contribution to the integrand
-            
+
             for lind = 1:numel(L) % Loop over every angular basis function
-                subG((q-1)*lenL+lind) = trapz(subU,rad_term.*leg_terms(lind,1:numel(subU)),2); % Calculate the integral
+                subG(q:lenK:end) = trapz(subU,bsxfun(@times,rad_term,leg_terms(:,1:numel(subU))),2); % Calculate the integral
             end
             
         end

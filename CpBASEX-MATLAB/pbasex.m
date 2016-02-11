@@ -1,4 +1,4 @@
-function out = pbasex(images, gData, makeImages, alpha, r)
+function out = pbasex(images, gData, makeImages, weights, regularization, alpha)
 %
 % pbasex Apply a modification of the PBASEX algorithm (see Garcia et al.,
 % Rev. Sci. Instrum. 75, 4989 (2004)) to Abel invert an image.
@@ -89,61 +89,58 @@ function out = pbasex(images, gData, makeImages, alpha, r)
 % where the third dimension indexes the images. These are only created if
 % makeImages is True.
 
-% By default, do not make reconstruction images
+% By default, do not use regularization
 if nargin<3
     makeImages = 0;
 end
 
-% Set default alpha
 if nargin<4
-    alpha = 4e-5;
+    weights = 0;
 end
 
-% By default, use gData.x for r
+% By default, do not make reconstruction images
 if nargin<5
-    r = gData.x;
+    regularization = 0;
+end
+
+% Set default alpha
+if nargin<6
+    alpha = 4e-5;
 end
 
 % Load gData if file specified
 if ischar(gData)
-    if makeImages
-        gData = load(gData,'Up','Sinv','V','x','y','k','l','rBF','params','Ginv');
-    else
-        gData = load(gData,'Up','Sinv','V','x','y','k','l','rBF','params');
-    end
+    gData = loadG(gData);
 end
 
 % Problem Dimensionality
-lenX = numel(gData.x);
-lenY = numel(gData.y);
-lenK = numel(gData.k);
-lenL = numel(gData.l);
-numIms = size(images,3);
+nx = numel(gData.x);
+nk = gData.nk;
+nl = gData.nl;
+nims = size(images,3);
 
 % Invert the data
-images = reshape(images,lenX*lenY,numIms);
-c = gData.V*(diag(gData.Sinv)*(gData.Up*images));
-C = permute(reshape(c,lenL,lenK,numIms),[2,1,3]);
-
-% Sample the radial part of the basis functions
-[R,K]=meshgrid(r,gData.k);
-frk = gData.rBF(R,K,gData.params);
+images = reshape(images,nx^2,nims);
+if any(weights)
+    c = gData.V*(diag(gData.S./(gData.S.^2+regularization))*((gData.Up*bsxfun(@times,U,w(:)))\(gData.Up*bsxfun(@times,images,w(:)))));
+else
+    c = gData.V*(diag(gData.S./(gData.S.^2+regularization))*(gData.Up*images));
+end
 
 % Calculate the radial intensity and beta values
-E = alpha*r.^2;
-IEB = 2*pi/alpha*diag(r)*frk'*C(:,:);
-IE = IEB(:,1:lenL:end);
-fr = 2*alpha*diag(1./r)*IE;
-betas = bsxfun(@times,reshape(IEB(:,setdiff(1:end,1:lenL:end)),[numel(r),lenL-1,numIms]),1./permute(IE,[1,3,2]));
+E = alpha*gData.x.^2;
+IEB = 1/(2*alpha)*diag(gData.x)*(gData.frk*reshape(permute(reshape(c,nk,nl,nims),[1,3,2]),nk,nl*nims));
+IE = IEB(:,1:nims);
+betas = bsxfun(@times,permute(reshape(IEB(:,nims+1:end),[nx,nims,nl-1]),[1,3,2]),1./permute(IE,[1,3,2]));
 
 % Generate Abel transformed and phi=0 sliced images from fit
 if makeImages
-    im_recon = unfoldQuadrant(reshape(gData.Up'*(diag(1./gData.Sinv)*(gData.V'*c)),lenX,lenY,numIms));
-    im_inv = unfoldQuadrant(reshape(gData.Ginv*c,lenX,lenY,numIms));
+    im_recon = unfoldQuadrant(reshape(gData.Up'*(diag(1./gData.Sinv)*(gData.V'*c)),nx,nx,nims));
+    im_inv = unfoldQuadrant(reshape(gData.Ginv*c,nx,nx,nims));
 end
 
 % Make an output structure with commonly used data
-out = struct('r',r,'fr',fr,'E',E,'IE',IE,'k',gData.k,'c',C,'betas',betas);
+out = struct('E',E,'IE',IE,'betas',betas,'c',c);
 if makeImages
     out.recon = im_recon;
     out.inv = im_inv;
