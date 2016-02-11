@@ -135,7 +135,7 @@ betas = bsxfun(@times,permute(reshape(IEB(:,nims+1:end),[nx,nims,nl-1]),[1,3,2])
 
 % Generate Abel transformed and phi=0 sliced images from fit
 if makeImages
-    im_recon = unfoldQuadrant(reshape(gData.Up'*(diag(1./gData.Sinv)*(gData.V'*c)),nx,nx,nims));
+    im_recon = unfoldQuadrant(reshape(gData.Up'*(diag(gData.S)*(gData.V'*c)),nx,nx,nims));
     im_inv = unfoldQuadrant(reshape(gData.Ginv*c,nx,nx,nims));
 end
 

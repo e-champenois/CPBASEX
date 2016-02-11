@@ -81,7 +81,7 @@ def pbasex(images, gData, make_images=False, weights=None, regularization=0, alp
 	E = alpha*gData['x']**2
 	IEB = 1/(2*alpha)*np.diag(gData['x']).dot(gData['frk'].dot(c.reshape(nl,nk,nim).transpose((1,0,2)).reshape(nk,nl*nim)))
 	IE = IEB[:,:nim]
-	betas = np.delete(IEB, np.s_[::nl], axis=1).reshape(nx, nl-1, nim)/IE[:,None,:]
+	betas = IEB[:,nim:].reshape(nx, nl-1, nim)/IE[:,None,:]
 
 	if make_images:
 		fit = unfoldQuadrant(gData['Up'].T.dot(np.diag((gData['S']**2+regularization)/gData['S']).dot(gData['V'].T.dot(c))).reshape(nx,nx,nim))
