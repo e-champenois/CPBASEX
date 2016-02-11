@@ -1,7 +1,7 @@
 CPBASEX
 =======
 
-[MATLAB] PBASEX Abel Inversion without Polar Rebinning
+pBASEX Abel Transform Inversion without Polar Rebinning... in MATLAB and Python
 
 This README needs some work...
 
