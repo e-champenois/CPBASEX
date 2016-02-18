@@ -68,31 +68,31 @@ def pbasex(images, gData, make_images=False, weights=None, regularization=0, alp
 	nx, nk, nl = len(gData['x']), gData['nk'], gData['nl']
 	try:
 		nim = images.shape[2]
-		nim_tup = (nim,)
 	except:
 		nim = 1
-		nim_tup = ()
+		images = images.reshape(nx,nx,nim)
 
 	# Invert the images through a least-squares fit of the Abel transformed basis functions.
-	images = images.reshape((nx**2,)+nim_tup)
+	images = images.reshape(nx**2,nim)
 
 	if weights is None:
 		c = gData['V'].dot(np.diag(gData['S']/(gData['S']**2+regularization)).dot(gData['Up'].dot(images)))
 	else:
+		weights = weights.flatten()
 		c = gData['V'].dot(np.diag(gData['S']/(gData['S']**2+regularization)).dot(np.linalg.solve(gData['Up'].dot(weights[:,None]*gData['Up'].T),gData['Up'].dot(weights[:,None]*images))))
 
 	# Calculate kinetic energy spectra and angular distributions from the fit coefficients.
 	E = alpha*gData['x']**2
-	IEB = 1/(2*alpha)*np.diag(gData['x']).dot(gData['frk'].dot(c.reshape((nl,nk)+nim_tup).swapaxes(0,1).reshape(nk,nl*nim)))
+	IEB = 1/(2*alpha)*np.diag(gData['x']).dot(gData['frk'].dot(c.reshape(nl,nk,nim).swapaxes(0,1).reshape(nk,nl*nim)))
 	IE = IEB[:,:nim]
-	betas = IEB[:,nim:].reshape((nx,nl-1)+nim_tup)/IE[:,None,:]
+	betas = IEB[:,nim:].reshape(nx,nl-1,nim)/IE[:,None,:]
 
 	if make_images:
-		fit = unfoldQuadrant(gData['Up'].T.dot(np.diag((gData['S']**2+regularization)/gData['S']).dot(gData['V'].T.dot(c))).reshape((nx,nx)+nim_tup))
-		inv = unfoldQuadrant(gData['Ginv'].dot(c).reshape((nx,nx)+nim_tup))
+		fit = unfoldQuadrant(gData['Up'].T.dot(np.diag((gData['S']**2+regularization)/gData['S']).dot(gData['V'].T.dot(c))).reshape(nx,nx,nim))
+		inv = unfoldQuadrant(gData['Ginv'].dot(c).reshape(nx,nx,nim))
 
 	# Populate the output dictionary
-	out = {'E': E, 'IE': np.squeeze(IE), 'betas': np.squeeze(betas), 'c': c}
+	out = {'E': E, 'IE': np.squeeze(IE), 'betas': np.squeeze(betas), 'c': np.squeeze(c)}
 	if make_images:
 		out['fit'], out['inv'] = np.squeeze(fit), np.squeeze(inv)
 
