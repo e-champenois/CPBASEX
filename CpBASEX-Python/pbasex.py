@@ -68,11 +68,13 @@ def pbasex(images, gData, make_images=False, weights=None, regularization=0, alp
 	nx, nk, nl = len(gData['x']), gData['nk'], gData['nl']
 	try:
 		nim = images.shape[2]
+		nim_tup = (nim,)
 	except:
 		nim = 1
+		nim_tup = ()
 
 	# Invert the images through a least-squares fit of the Abel transformed basis functions.
-	images = images.reshape(nx**2, nim)
+	images = images.reshape((nx**2,)+nim_tup)
 
 	if weights is None:
 		c = gData['V'].dot(np.diag(gData['S']/(gData['S']**2+regularization)).dot(gData['Up'].dot(images)))
@@ -81,13 +83,13 @@ def pbasex(images, gData, make_images=False, weights=None, regularization=0, alp
 
 	# Calculate kinetic energy spectra and angular distributions from the fit coefficients.
 	E = alpha*gData['x']**2
-	IEB = 1/(2*alpha)*np.diag(gData['x']).dot(gData['frk'].dot(c.reshape(nl,nk,nim).transpose((1,0,2)).reshape(nk,nl*nim)))
+	IEB = 1/(2*alpha)*np.diag(gData['x']).dot(gData['frk'].dot(c.reshape((nl,nk)+nim_tup).swapaxes(0,1).reshape(nk,nl*nim)))
 	IE = IEB[:,:nim]
-	betas = IEB[:,nim:].reshape(nx, nl-1, nim)/IE[:,None,:]
+	betas = IEB[:,nim:].reshape((nx,nl-1)+nim_tup)/IE[:,None,:]
 
 	if make_images:
-		fit = unfoldQuadrant(gData['Up'].T.dot(np.diag((gData['S']**2+regularization)/gData['S']).dot(gData['V'].T.dot(c))).reshape(nx,nx,nim))
-		inv = unfoldQuadrant(gData['Ginv'].dot(c).reshape(nx,nx,nim))
+		fit = unfoldQuadrant(gData['Up'].T.dot(np.diag((gData['S']**2+regularization)/gData['S']).dot(gData['V'].T.dot(c))).reshape((nx,nx)+nim_tup))
+		inv = unfoldQuadrant(gData['Ginv'].dot(c).reshape((nx,nx)+nim_tup))
 
 	# Populate the output dictionary
 	out = {'E': E, 'IE': np.squeeze(IE), 'betas': np.squeeze(betas), 'c': c}
@@ -382,9 +384,10 @@ def resizeFolded(M, r_max):
 
 	try:
 		sy,sx,sz = M.shape
+		sz = (sz,)
 	except ValueError:
 		sy,sx = M.shape
-		sz = 1
+		sz = ()
 
 	if sx>r_max:
 		x1, x2 = r_max, 0
@@ -395,7 +398,7 @@ def resizeFolded(M, r_max):
 	else:
 		y1, y2 = sy, r_max-sy
 
-	return np.vstack((np.hstack((M[:y1,:x1],np.zeros((y1,x2,sz)))),np.zeros((y2,r_max,sz))))
+	return np.vstack((np.hstack((M[:y1,:x1],np.zeros((y1,x2)+sz))),np.zeros((y2,r_max)+sz)))
 
 def gauss_rBF(x, k, params):
 
