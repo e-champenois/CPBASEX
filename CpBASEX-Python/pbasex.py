@@ -76,10 +76,10 @@ def pbasex(images, gData, make_images=False, weights=None, regularization=0, alp
 	images = images.reshape(nx**2,nim)
 
 	if weights is None:
-		c = gData['V'].dot(np.diag(gData['S']/(gData['S']**2+regularization)).dot(gData['Up'].dot(images)))
+		c = gData['V'].dot((gData['S']/(gData['S']**2+regularization))[:,None]*(gData['Up'].dot(images)))
 	else:
 		weights = weights.flatten()
-		c = gData['V'].dot(np.diag(gData['S']/(gData['S']**2+regularization)).dot(np.linalg.solve(gData['Up'].dot(weights[:,None]*gData['Up'].T),gData['Up'].dot(weights[:,None]*images))))
+		c = gData['V'].dot((gData['S']/(gData['S']**2+regularization))[:,None]*(np.linalg.solve((gData['Up']*weights[None,:]).dot(gData['Up'].T),gData['Up'].dot(weights[:,None]*images))))
 
 	# Calculate kinetic energy spectra and angular distributions from the fit coefficients.
 	E = alpha*gData['x']**2
