@@ -8,7 +8,8 @@ except:
 		return 1
 else:
 	from multiprocessing import Pool, cpu_count
-	def packed_func((dumped_function, item)):
+	def packed_func(func_and_item):
+		dumped_function, item = func_and_item
 		target_function = dill.loads(dumped_function)
 		res = target_function(item)
 		return res
@@ -289,7 +290,7 @@ def findG(X, K, L, rBF, zIP, trapz_step, nProc):
 		p.close()
 	else:
 		G = map(findG_sub, zip(Y, R))
-	return np.array(G)/(2*np.pi)
+	return np.array(list(G))/(2*np.pi)
 
 def findGinv(X, K, L, rBF):
 	#reoptimize??
