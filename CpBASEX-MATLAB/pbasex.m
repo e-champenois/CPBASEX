@@ -88,6 +88,8 @@ function out = pbasex(images, gData, makeImages, weights, regularization, alpha)
 % inverted data. If multiple images were inverted, they become 3-D matrices
 % where the third dimension indexes the images. These are only created if
 % makeImages is True.
+%
+% Written by Elio Champenois.
 
 % By default, do not use regularization
 if nargin<3

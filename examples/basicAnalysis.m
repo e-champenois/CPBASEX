@@ -1,5 +1,5 @@
 %% Load Integrals
-gData = loadG('../gData/G_r512_k512_l4.h5',1);
+gData = loadG('../gData/G_r512_k64_l4.h5',1);
 %% Load Data
 h_fid = fopen('high_counts.bin','r');
 l_fid = fopen('low_counts.bin','r');
@@ -13,7 +13,7 @@ fclose(f_fid);
 %% Do Inversion
 x0 = 512;
 y0 = 512;
-fold = resizeFolded(foldQuadrant(data,x0,y0),512);
+fold = resizeFolded(foldQuadrant(data,x0,y0,[1,1,1,1]),512);
 %%
 out = pbasex(fold,gData,1);
 %% Plot Inversion Data

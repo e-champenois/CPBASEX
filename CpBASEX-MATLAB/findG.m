@@ -164,4 +164,6 @@ if progBar
     pB.delete();
 end
 
+G = G/(2*pi);
+
 end

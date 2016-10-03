@@ -1,6 +1,6 @@
 tic
 x = 0:511;
-xkratio = 4;
+xkratio = 8;
 if xkratio == 1
     k = x;
 else
