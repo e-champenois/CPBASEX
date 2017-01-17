@@ -1,0 +1,5 @@
+#documentation
+recursive-include docs *
+
+#readme
+include README.pdf
