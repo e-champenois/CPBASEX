@@ -2,7 +2,6 @@ import numpy as np
 from h5py import File
 from os.path import join
 from .rBFs import rBFs
-import collections
 
 try:
 	import dill
@@ -54,11 +53,11 @@ def get_gData(gData, save_path=None, save_dir=None, custom_rBF=None, nProc=cpu_c
 		rBF = rBFs(gData['rBF'], custom_rBF)
 	if len(rBF) == 1:
 		rBF = rBF[0]
-	if isinstance(rBF, collections.Callable):
+	if callable(rBF):
 		zIP = 1.5*max(gData['x'])
 		trapz_step = 0.05
 	elif len(rBF) == 2:
-		if isinstance(rBF[1], collections.Callable):
+		if callable(rBF[1]):
 			rBF, zIP = rBF
 			trapz_step = 0.05
 		else:
@@ -85,7 +84,7 @@ def get_gData(gData, save_path=None, save_dir=None, custom_rBF=None, nProc=cpu_c
 
 	# Save the calculation results.
 	with File(save_path,'w') as f:
-		for key in list(gData.keys()):
+		for key in gData.keys():
 			f.create_dataset(key,data=gData[key])
 
 def findG(X, K, L, rBF, zIP, trapz_step, nProc=cpu_count()):
@@ -115,10 +114,10 @@ def findG(X, K, L, rBF, zIP, trapz_step, nProc=cpu_count()):
 
 	if nProc > 1:
 		p = Pool(nProc)
-		G = p.map(*pack(findG_sub, list(zip(Y, R))))
+		G = p.map(*pack(findG_sub, zip(Y, R)))
 		p.close()
 	else:
-		G = list(map(findG_sub, list(zip(Y, R))))
+		G = map(findG_sub, zip(Y, R))
 	return np.array(list(G))/(2*np.pi)
 
 def findGinv(X, K, L, rBF):
