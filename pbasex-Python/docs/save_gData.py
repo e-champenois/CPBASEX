@@ -49,4 +49,4 @@ np.seterr("ignore")
 
 t0 = time.time()
 get_gData(gData, save_path=save_path, save_dir=save_dir, custom_rBF=custom_rBF)
-print(time.time()-t0)
+print((time.time()-t0))
