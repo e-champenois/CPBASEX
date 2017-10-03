@@ -5,6 +5,7 @@ if __name__ == '__main__':
 		  name='pbasex',
 		  keywords='pbasex, Abel, inversion, cpbasex',
 		  packages=['pbasex'],
+		  setup_requires=['cython'],
 		  install_requires=['numpy', 'h5py', 'quadrant'],
 		  version='1.2.1',
 		  description='pBASEX implementation without polar rebinning.',

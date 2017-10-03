@@ -35,7 +35,10 @@ def loadG(gData, make_images=False):
 	else:
 		return gData
 
-def get_gData(gData, save_path=None, save_dir=None, custom_rBF=None, nProc=cpu_count()):
+def get_gData(gData, save_path=None, save_dir=None, custom_rBF=None, nProc=cpu_count(), silent=0):
+
+	if not silent:
+		print('Setting up calculations, using %d core(s)...' % nProc)
 
 	# Set defaults.
 	if save_path is None:
@@ -59,7 +62,7 @@ def get_gData(gData, save_path=None, save_dir=None, custom_rBF=None, nProc=cpu_c
 	elif len(rBF) == 2:
 		if callable(rBF[1]):
 			rBF, zIP = rBF
-			trapz_step = 0.05
+			trapz_step = 0.1
 		else:
 			rBF, trapz_step = rBF
 			zIP = 1.5*max(gData['x'])
@@ -68,24 +71,37 @@ def get_gData(gData, save_path=None, save_dir=None, custom_rBF=None, nProc=cpu_c
 	rBF_2 = lambda x, k: rBF(x, k, gData['params'])
 	zIP_2 = lambda x, k: zIP(x, k, gData['params'])
 
+	if not silent:
+		print('Sampling Abel transformed basis functions...')
+
 	# Sample the Abel transformed basis functions.
 	G = findG(gData['x'], gData['k'], gData['l'], rBF_2, zIP_2, trapz_step, nProc)
+
+	if not silent:
+		print('Computing the singular value decomposition...')
 
 	# Find the singular value decomposition of the G matrix for least-squares fitting.
 	U, S, Vp = np.linalg.svd(G,0)
 	gData['Up'], gData['S'], gData['V'] = U.T, S, Vp.T
 
+	if not silent:
+		print('Sampling the basis functions...')
+
 	# Sample the radial basis functions.
 	K, X = np.meshgrid(gData['k'], gData['x'])
 	gData['frk'] = rBF_2(X, K)
-
-	# Sample the basis functions.
 	gData['Ginv'] = findGinv(gData['x'], gData['k'], gData['l'], rBF_2)
+
+	if not silent:
+		print('Saving results...')
 
 	# Save the calculation results.
 	with File(save_path,'w') as f:
 		for key in gData.keys():
 			f.create_dataset(key,data=gData[key])
+
+	if not silent:
+		print('Done!')
 
 def findG(X, K, L, rBF, zIP, trapz_step, nProc=cpu_count()):
 
