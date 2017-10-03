@@ -6,7 +6,7 @@ from pbasex import get_gData
 save_path = None # Automatic file naming if none
 save_dir = None # Directory to save the data
 nx = 512  # 512x512 quadrant
-xkratio = 2 # Ratio of radial basis functions to pixel radii
+xkratio = 1 # Ratio of radial basis functions to pixel radii
 lmax = 4 # Up to l=4
 k_spacing = 'linear' # Even pixel or energy bins
 gData = {}
@@ -37,7 +37,7 @@ if gData['rBF'] == 'custom':
 
 		return np.sqrt((np.sqrt(max(0, 10-(params/2)**2)) + k)**2 - r**2)
 
-	trapz_step = 0.05
+	trapz_step = 0.1
 
 	custom_rBF = (rBF, zIP, trapz_step)
 

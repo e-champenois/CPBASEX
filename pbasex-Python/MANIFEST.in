@@ -1,5 +1,5 @@
 #documentation
 recursive-include docs *
 
-#readme
+#readmepdf
 include README.pdf
