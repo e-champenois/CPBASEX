@@ -3,7 +3,7 @@ function out = pbasex(images, gData, makeImages, weights, regularization, alpha)
 % pbasex Apply a modification of the PBASEX algorithm (see Garcia et al.,
 % Rev. Sci. Instrum. 75, 4989 (2004)) to Abel invert an image.
 %
-% out = pbasex(im,gData,makeImages,r) returns the inversion basis
+% out = pbasex(im,gData,makeImages) returns the inversion basis
 % function coefficients and other inversion information for the image im
 % using data in gData to perform the inversion.
 %
@@ -17,15 +17,14 @@ function out = pbasex(images, gData, makeImages, weights, regularization, alpha)
 % inversion data or a structure object with the relevant inversion data as
 % fields. The inversion data fields are:
 %
-%   (1) x and y, 1-D arrays where the i-th element is the distance from the
+%   (1) x, a 1-D array where the i-th element is the distance from the
 % image center to the i-th pixel in each dimension. Dimensions must match
-% such that size(im,1) = size(x) and size(im,2) = size(y).
+% such that size(im,1) = size(im,2) = size(x).
 %
 %   (2) k, a 1-D array indexing the radial part of the basis functions.
 %
 %   (3) l, a 1-D array indexing the angular part of the basis functions.
-%   The
-% values of l must be non-negative, even integers.
+%   The values of l must be non-negative, even integers.
 %
 %   (4) rBF, a function handle where rBF(r,k,params) outputs the value of
 % the k-th radial basis function at radius r.
@@ -124,7 +123,7 @@ nims = size(images,3);
 % Invert the data
 images = reshape(images,nx^2,nims);
 if any(weights)
-    c = gData.V*(diag(gData.S./(gData.S.^2+regularization))*((gData.Up*bsxfun(@times,U,w(:)))\(gData.Up*bsxfun(@times,images,w(:)))));
+    c = gData.V*(diag(gData.S./(gData.S.^2+regularization))*((gData.Up*bsxfun(@times,U,weights(:)))\(gData.Up*bsxfun(@times,images,weights(:)))));
 else
     c = gData.V*(diag(gData.S./(gData.S.^2+regularization))*(gData.Up*images));
 end

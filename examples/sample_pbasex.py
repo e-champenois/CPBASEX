@@ -17,7 +17,7 @@ quadrant_filter = [1,1,1,1]
 folded = resizeFolded(foldQuadrant(raw, x0, y0, quadrant_filter), 512)
 
 # Load inversion data
-gData = loadG('G_r512_k512_l4.h5', 1)
+gData = loadG('G_r512_k128_l4.h5', 1)
 
 # Apply the pBASEX algorithm
 out = pbasex(folded, gData, make_images=True, alpha=4.1e-5)

@@ -49,3 +49,9 @@ In sample_pbasex, the steps required to fold an image and invert it are shown. V
 ```sh
 $ pip3 install matplotlib
 ```
+
+# Code wish list
+
+  - Propagating experimental errors (as mentioned by GitHub user phockett) through the inversion procedure. Although implementation optimizations hide this fact, all calculations here can be represented as matrix multiplications, such that error propagation can be implemented as Var(y) = A * Var(x) * A', where y = A * x. I have this partially implemented locally, although there it is a bit difficult to test for accuracy. Also, if Var(x) is a full covariance matrix, calculations get prohibitively large, so I have only tried using diagonal covariance matrices (no coupled errors).
+  - Allowing for odd angular momentum contributions, accounting for non-isotropic target ensembles. This would need a bit of rework since the single quadrant picture is no longer accurate.
+  - Rework the Python code into an object-oriented architecture (similar to [cart2polar](https://pypi.python.org/pypi/cart2polar)).

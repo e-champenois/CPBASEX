@@ -1,6 +1,6 @@
 tic
 x = 0:511;
-xkratio = 8;
+xkratio = 4;
 if xkratio == 1
     k = x;
 else
@@ -10,13 +10,13 @@ l = 0:2:4;
 nk = numel(k);
 nl = numel(l);
 params = 0.7*xkratio;
-rBF = @(x,k,params) exp(-(x-k).^2./(2*params(1)^2))./k.^2; %leave alone
+rBF = @(x,k,params) exp(-(x-k).^2./(2*params(1)^2)); %leave alone
 zIP = @(r,k,params) sqrt((sqrt(2*10)*params(1)+k).^2-r^2); %leave alone
 gData = struct('x',x,'k',k,'l',l,'params',params,'rBF',rBF,'zIP',zIP);
 [K,R] = meshgrid(k,x);
 frk = rBF(R,K,params);
-G = findG(gData,0);
-Ginv = findGinv(gData,0);
+G = findG(gData);
+Ginv = findGinv(gData);
 [U,S,V] = svd(G,0);
 Up = U';
 S = diag(S);

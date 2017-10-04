@@ -1,4 +1,4 @@
-function [Ginv,gData] = findGinv(gData, progBar)
+function [Ginv,gData] = findGinv(gData)
 %
 % findGinv Numerical evaluation of polar basis functions in a
 % cartesian basis.
@@ -10,7 +10,7 @@ function [Ginv,gData] = findGinv(gData, progBar)
 %
 % gData, a structure with fields:
 %
-% *x and y, 1-D arrays specifying the cartesian grid on which to sample the
+% *x, a 1-D array specifying the cartesian grid on which to sample the
 % Abel transform of the basis functions.
 %
 % *k, a 1-D array indexing the radial basis functions.
@@ -24,9 +24,6 @@ function [Ginv,gData] = findGinv(gData, progBar)
 %
 % *params, an object of any type used to specify parameters used in the
 % radial basis functions.
-%
-% progBar, a boolean that controls whether or not to display a progress
-% bar. If not specified, the default is False.
 %
 % Output:
 %
@@ -56,14 +53,8 @@ function [Ginv,gData] = findGinv(gData, progBar)
 % Ginv = findGinv(gData);
 
 % Set unspecified inputs to their default values
-if nargin==1
-    progBar = 0;
-end
 if ~isfield(gData,'x')
-    gData.x = 0:255;
-end
-if ~isfield(gData,'y')
-    gData.y = gData.x;
+    gData.x = 0:511;
 end
 if ~isfield(gData,'k')
     gData.k = (gData.x(1:2:end)+gData.x(2:2:end))/2;
@@ -72,7 +63,7 @@ if ~isfield(gData,'l')
     gData.l = [0,2,4];
 end
 if ~isfield(gData,'rBF')
-    gData.rBF = @(x,k,params) exp(-(x-k).^2/(2*params(1)^2))/k^2;
+    gData.rBF = @(x,k,params) exp(-(x-k).^2/(2*params(1)^2));
     gData.params = 1.4;
     gData.zIP = @(r,k,params) sqrt((sqrt(2*10)*params(1)+k).^2-r^2);
 end
@@ -84,10 +75,6 @@ K = gData.k;
 L = gData.l;
 rBF = gData.rBF;
 params = gData.params;
-
-if nargin==1
-    progBar = 0;
-end
 
 % Size of inputs
 lenX = numel(X);
@@ -102,14 +89,6 @@ yl = yl(:);
 R = sqrt(xl.^2+yl.^2);
 costh = yl./R;
 
-% Set up progress bar
-if progBar
-    progStep = ceil(lenK*lenL/500)+1;
-    progBar = ParforProgMon('Polar Integrals Progress:', lenK*lenL, progStep, 400, 70);
-else
-    progStep = 0;
-end
-
 Ginv = zeros(lenK*lenL,lenX^2); % Initialize output matrix
 
 % Calculate integrals
@@ -120,16 +99,6 @@ parfor ind = 1:lenK*lenL % Loop over every radial basis function
     
     Ginv(ind,:) = rBF(R,k,params).*leg(l,costh); % Calculate function value
     
-    % Update progress bar
-    if progBar&&not(mod(ind,progStep))
-        progBar.increment();
-    end
-    
-end
-
-% Delete progress bar
-if progBar
-    progBar.delete();
 end
 
 Ginv(isnan(Ginv)) = 0;

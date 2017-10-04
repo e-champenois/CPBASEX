@@ -1,9 +1,9 @@
-function [G,gData] = findG(gData, progBar)
+function [G,gData] = findG(gData)
 %
 % findG Numerical evaluation of Abel transformed polar basis functions in a
 % cartesian basis.
 %
-% [G, gData] = findG(gData, progBar) calculates the value of the Abel
+% [G, gData] = findG(gData) calculates the value of the Abel
 % transform of a set of basis functions at specified image pixels. The
 % necessary integrals are done numerically using the trapezoid method.
 %
@@ -11,7 +11,7 @@ function [G,gData] = findG(gData, progBar)
 %
 % gData, a structure with fields:
 %
-% *x and y, 1-D arrays specifying the cartesian grid on which to sample the
+% *x, a 1-D array specifying the cartesian grid on which to sample the
 % Abel transform of the basis functions.
 %
 % *k, a 1-D array indexing the radial basis functions.
@@ -25,9 +25,6 @@ function [G,gData] = findG(gData, progBar)
 %
 % *params, an object of any type used to specify parameters used in the
 % radial basis functions.
-%
-% progBar, a boolean that controls whether or not to display a progress
-% bar. If not specified, the default is False.
 %
 % Output:
 %
@@ -44,7 +41,7 @@ function [G,gData] = findG(gData, progBar)
 % Example:
 %
 % % 512x512 pixels of data
-% gData.x = 0:511; gData.y = 0:511;
+% gData.x = 0:511;
 % % One basis function each 2 pixels
 % gData.k = 0.5:2:511;
 % % Two-photon process can be represented angularly by the Legendre
@@ -53,14 +50,12 @@ function [G,gData] = findG(gData, progBar)
 % % Gaussian radial basis functions centered at k and of width sqrt(2)
 % % pixels
 % gData.params = sqrt(2);
-% gData.rBF = @(x,k,params) exp(-(x-k).^2/(2*params(1)^2))/k^2;
+% gData.rBF = @(x,k,params) exp(-(x-k).^2/(2*params(1)^2));
 % gData.zIP = @(r,k,params) sqrt((sqrt(2*10)*params(1)+k).^2-r^2);
 % G = findG(gData);
 
 % Set unspecified inputs to their default values
-if nargin==1
-    progBar = 0;
-end
+
 if ~isfield(gData,'x')
     gData.x = 0:511;
 end
@@ -71,7 +66,7 @@ if ~isfield(gData,'l')
     gData.l = [0,2,4];
 end
 if ~isfield(gData,'rBF')
-    gData.rBF = @(x,k,params) exp(-(x-k).^2/(2*params(1)^2))/k^2;
+    gData.rBF = @(x,k,params) exp(-(x-k).^2/(2*params(1)^2));
     gData.params = 1.4;
     gData.zIP = @(r,k,params) sqrt((sqrt(2*10)*params(1)+k).^2-r^2);
 end
@@ -110,15 +105,6 @@ R = sqrt(xl.^2+yl.^2);
 u = 0:trapzStep:zIP(min(R),max(K),params);
 lenU = numel(u);
 
-% Set up progress bar
-if progBar
-    progStep = ceil(lenX^2/500)+1;
-    pB = ParforProgMon('Polar Integrals Progress:', lenX^2, progStep, 400, 70);
-else
-    progStep = 0;
-    pB = 0;
-end
-
 G = zeros(lenX^2,lenK*lenL); % Initialize output matrix
 
 % Calculate integrals
@@ -152,16 +138,6 @@ for ind = 1:lenX^2 % Loop over every data pixel
     
     G(ind,:) = subG;
     
-    % Update progress bar
-    if progBar&&not(mod(ind,progStep))
-        pB.increment();
-    end
-    
-end
-
-% Delete progress bar
-if progBar
-    pB.delete();
 end
 
 G = G/(2*pi);

@@ -1,5 +1,5 @@
 %% Load Integrals
-gData = loadG('../gData/G_r512_k64_l4.h5',1);
+gData = loadG('gData/G_r512_k128_l4.h5',1);
 %% Load Data
 h_fid = fopen('high_counts.bin','r');
 l_fid = fopen('low_counts.bin','r');
@@ -24,6 +24,7 @@ xlabel('Energy (eV)')
 ylabel('Intensity (normalized)')
 legend('High Counts','Low Counts')
 title('Sample CPBASEX Inversion Data')
+ylim([0,5])
 subplot(2,1,2)
 plot(out.E,out.betas(:,:,1)) % plot betas versus energy for the first image
 xlabel('Energy (eV)')

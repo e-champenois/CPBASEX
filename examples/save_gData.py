@@ -6,7 +6,7 @@ from pbasex import get_gData
 save_path = None # Automatic file naming if none
 save_dir = None # Directory to save the data
 nx = 512  # 512x512 quadrant
-xkratio = 1 # Ratio of radial basis functions to pixel radii
+xkratio = 4 # Ratio of radial basis functions to pixel radii
 lmax = 4 # Up to l=4
 k_spacing = 'linear' # Even pixel or energy bins
 gData = {}
