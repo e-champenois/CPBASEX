@@ -2,7 +2,7 @@ import numpy as np
 from .gData import loadG
 from quadrant import unfoldQuadrant
 
-def pbasex(images, gData, make_images=False, weights=None, regularization=0, alpha=1):
+def pbasex(images, gData, make_images=False, weights=None, regularization=0, alpha=1.0):
 	
 	gData  = loadG(gData, make_images)
 	nx, nk, nl = len(gData['x']), gData['nk'], gData['nl']
