@@ -7,7 +7,7 @@ if __name__ == '__main__':
 		  packages=['pbasex'],
 		  setup_requires=['cython'],
 		  install_requires=['numpy', 'h5py', 'quadrant'],
-		  version='1.2.2',
+		  version='1.3.0',
 		  description='pBASEX algorithm without polar rebinning.',
 		  url='https://github.com/e-champenois/CPBASEX',
 		  author='Elio Champenois',
