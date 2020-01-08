@@ -88,8 +88,7 @@ def get_gData(gData, save_path=None, save_dir=None, custom_rBF=None, nProc=cpu_c
 		print('Sampling the basis functions...')
 
 	# Sample the radial basis functions.
-	K, X = np.meshgrid(gData['k'], gData['x'])
-	gData['frk'] = rBF_2(X, K)
+	gData['frk'] = rBF_2(gData['x'], gData['k'])
 	gData['Ginv'] = findGinv(gData['x'], gData['k'], gData['l'], rBF_2)
 
 	if not silent:
@@ -136,21 +135,19 @@ def findG(X, K, L, rBF, zIP, trapz_step, nProc=cpu_count()):
 		G = map(findG_sub, zip(Y, R))
 	return np.array(list(G))/(2*np.pi)
 
-def findGinv(X, K, L, rBF):
+def findGinv(x, k, l, rBF):
 
-	Y, X = np.meshgrid(X, X)
+	Y, X = np.meshgrid(x, x)
 	Y, X = Y.flatten(), X.flatten()
 	R = np.sqrt(X**2+Y**2)
-
-	L, K = np.meshgrid(L, K)
-	L, K = L.T.flatten(), K.T.flatten()
-
 	CosTh = Y/R
-	#CosTh[np.isnan(CosTh)] = 1
 
-	R, K = np.meshgrid(R, K)
+	Irk = rBF(R, k)
+	Pl = np.empty((len(X), len(l)))
+	for i, li in enumerate(l):
+		Pl[:,i] = leg(li, CosTh)
 
-	return np.nan_to_num(rBF(R, K)*leg2D(L,CosTh)).T
+	return np.nan_to_num((Pl[:,:,None] * Irk[:,None]).reshape(len(X), -1), copy=False)
 
 def leg(l,x):
 
@@ -167,21 +164,8 @@ def leg(l,x):
 	elif l==8:
 		x2 = x**2
 		return ((((6435*x2-12012)*x2+6930)*x2-1260)*x2+35)/128
+	elif l==10:
+		x2 = x**2
+		return (((((46189*x2-109395)*x2+90090)*x2-30030)*x2+3465)*x2-63)/256
 	else:
 		raise ValueError('l-value not implemented.')
-
-def leg2D(L,X):
-
-	ls, idxs = np.unique(L, return_inverse=True)
-
-	tmp = np.zeros((len(ls),len(X)))
-
-	for i,l in enumerate(ls):
-		tmp[i,:] = leg(l,X)
-
-	out = np.zeros((len(L),len(X)))
-
-	for i,idx in enumerate(idxs):
-		out[i,:] = tmp[idx,:]
-
-	return out
