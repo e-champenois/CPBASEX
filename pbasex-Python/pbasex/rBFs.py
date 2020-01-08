@@ -13,7 +13,12 @@ def rBFs(type='gauss', custom_rBF=None):
 
 def rBF_gauss(r, k, params):
 
-	return np.exp(-(r - k)**2 / (2*params**2))
+	arr = r[:,None] - k
+	arr **= 2
+	arr /= -2*params**2
+	np.exp(arr, arr)
+	
+	return arr.squeeze()
 
 def zIP_gauss(r, k, params):
 
